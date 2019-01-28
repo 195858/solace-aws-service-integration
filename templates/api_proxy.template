@@ -9,7 +9,8 @@
 					},
 					"Parameters": [
 						"ResourceType",
-						"ResourceARN"
+						"ResourceARN",
+						"KinesisPartitionKey"
 					]
 				},
 				{
@@ -42,6 +43,9 @@
 				},
 				"QSS3KeyPrefix": {
 					"default": "Quick Start S3 Key Prefix"
+				},
+				"KinesisPartitionKey": {
+					"default": "Kinesis Partition Key (JSON Path)"
 				}
 			}
 		}
@@ -60,8 +64,13 @@
 			]
 		},
 		"ResourceARN": {
-			"Description": "The AWS ARN associated with resource, example arn:sqs:myQueue",
-			"ConstraintDescription": "The ARN of the resource",
+			"Description": "The AWS ARN associated with resource, example arn:sqs:myQueue. For Kinesis use the stream name.",
+			"ConstraintDescription": "The ARN of the resource or Kinesis stream name",
+			"Type": "String"
+		},
+		"KinesisPartitionKey": {
+			"Description": "A JSON Path to extract the partition key from the message payload",
+			"ConstraintDescription": "The Partition Key for use by Kinesis",
 			"Type": "String"
 		},
 		"SubnetIDs": {
@@ -171,7 +180,9 @@
 				"TemplateURL": {"Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}/templates/Services/kinesis_proxy.template"},
 				"Parameters": {
 					"RoleARN" : {"Fn::GetAtt": ["RoleStack","Outputs.ARN"]},
-					"vpcId": { "Ref" :"VPCID" }
+					"vpcId": { "Ref" :"VPCID" }, 
+					"PartitionKey" : {"Ref": "KinesisPartitionKey"},
+					"ResourceARN" : { "Fn::Select" : [ "1", { "Fn::Split": ["/", {"Ref" : "ResourceARN"}]}]}
 				}
 			}
 		},
