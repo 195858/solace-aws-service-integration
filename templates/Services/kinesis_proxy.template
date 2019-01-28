@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "CloudFormation template to deploy Solace HA Message Routers on AWS",
+  "Description": "CloudFormation template to deploy Solace to Kinesis AWS API Gateway",
   "Parameters": {
     "vpcId": {"Type": "String"},
     "RoleARN" : {"Type": "String"}
@@ -20,311 +20,74 @@
             "version": "2016-03-31T18:25:32Z",
             "title": "Solace_binary_message->Kinesis"
           },
-          "basePath": "/test",
           "schemes": [
             "https"
           ],
           "paths": {
-            "/streams/{stream-name}": {
-              "get": {
-                "consumes": [
-                  "application/json"
-                ],
-                "produces": [
-                  "application/json"
-                ],
-                "parameters": [
-                  {
-                    "name": "stream-name",
-                    "in": "path",
-                    "required": true,
-                    "type": "string"
+            "post": {
+              "consumes": [
+                "application/octet-stream",
+                "text/plain",
+                "text/xml",
+                "application/json"
+              ],
+              "produces": [
+                "application/json"
+              ],
+              "parameters": [
+                {
+                  "in": "body",
+                  "name": "Empty",
+                  "required": true,
+                  "schema": {
+                    "$ref": "#/definitions/Empty"
                   }
-                ],
-                "responses": {
-                  "200": {
-                    "description": "200 response",
-                    "schema": {
-                      "$ref": "#/definitions/Empty"
-                    }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "200 response",
+                  "schema": {
+                    "$ref": "#/definitions/Empty"
                   }
                 },
-                "x-amazon-apigateway-integration": {
-                  "credentials": {"Ref" : "RoleARN"},
-                  "responses": {
-                    "default": {
-                      "statusCode": "200"
-                    }
-                  },
-                  "requestTemplates": {
-                    "application/json": "{\n    \"StreamName\": \"$input.params('stream-name')\"\n}"
-                  },
-                  "uri": {"Fn::Join": [":", ["arn:aws:apigateway", {"Ref": "AWS::Region"}, "kinesis:action/DescribeStream"]]},
-                  "httpMethod": "POST",
-                  "type": "aws"
+                "400": {
+                  "description": "400 response"
+                },
+                "500": {
+                  "description": "500 response"
                 }
               },
-              "post": {
-                "consumes": [
-                  "application/json"
-                ],
-                "produces": [
-                  "application/json"
-                ],
-                "parameters": [
-                  {
-                    "name": "stream-name",
-                    "in": "path",
-                    "required": true,
-                    "type": "string"
-                  }
-                ],
+              "x-amazon-apigateway-integration": {
+                "credentials": {"Ref" : "RoleARN"},
+                "uri": {"Fn::Join": [":", ["arn:aws:apigateway", {"Ref": "AWS::Region"}, "kinesis:action/PutRecord"]]},
                 "responses": {
-                  "200": {
-                    "description": "200 response",
-                    "schema": {
-                      "$ref": "#/definitions/Empty"
-                    }
+                  "4\\d{2}": {
+                    "statusCode": "400"
+                  },
+                  "5\\d{2}": {
+                    "statusCode": "500"
+                  },
+                  "2\\d{2}": {
+                    "statusCode": "200"
                   }
                 },
-                "x-amazon-apigateway-integration": {
-                  "credentials": {"Ref" : "RoleARN"},
-                  "responses": {
-                    "default": {
-                      "statusCode": "200"
-                    }
-                  },
-                  "requestTemplates": {
-                    "application/json": "{\n    \"ShardCount\": 5,\n    \"StreamName\": \"$input.params('stream-name')\"\n}"
-                  },
-                  "uri": {"Fn::Join": [":", ["arn:aws:apigateway", {"Ref": "AWS::Region"}, "kinesis:action/CreateStream"]]},
-                  "httpMethod": "POST",
-                  "requestParameters": {
-                    "integration.request.header.Content-Type": "'application/x-amz-json-1.1'"
-                  },
-                  "type": "aws"
-                }
-              }
-            },
-            "/streams/{stream-name}/record": {
-              "put": {
-                "consumes": [
-                  "application/json"
-                ],
-                "produces": [
-                  "application/json"
-                ],
-                "parameters": [
-                  {
-                    "name": "stream-name",
-                    "in": "path",
-                    "required": true,
-                    "type": "string"
-                  }
-                ],
-                "responses": {
-                  "200": {
-                    "description": "200 response",
-                    "schema": {
-                      "$ref": "#/definitions/Empty"
-                    }
-                  }
+                "requestParameters": {
+                  "integration.request.header.Content-Type": "'application/x-amz-json-1.1'"
                 },
-                "x-amazon-apigateway-integration": {
-                  "credentials": {"Ref" : "RoleARN"},
-                  "responses": {
-                    "default": {
-                      "statusCode": "200"
-                    }
-                  },
-                  "requestTemplates": {
-                    "application/json": "{\n    \"StreamName\": \"$input.params('stream-name')\",\n    \"Data\": \"$util.base64Encode($input.json('$.Data'))\",\n    \"PartitionKey\": \"$input.path('$.PartitionKey')\"\n}"
-                  },
-                  "uri": {"Fn::Join": [":", ["arn:aws:apigateway", {"Ref": "AWS::Region"}, "kinesis:action/PutRecord"]]},
-                  "httpMethod": "POST",
-                  "requestParameters": {
-                    "integration.request.header.Content-Type": "'application/x-amz-json-1.1'"
-                  },
-                  "type": "aws"
-                }
-              }
-            },
-            "/streams/{stream-name}/records": {
-              "get": {
-                "consumes": [
-                  "application/json"
-                ],
-                "produces": [
-                  "application/json"
-                ],
-                "parameters": [
-                  {
-                    "name": "stream-name",
-                    "in": "path",
-                    "required": true,
-                    "type": "string"
-                  },
-                  {
-                    "name": "Shard-Iterator",
-                    "in": "header",
-                    "required": false,
-                    "type": "string"
-                  }
-                ],
-                "responses": {
-                  "200": {
-                    "description": "200 response",
-                    "schema": {
-                      "$ref": "#/definitions/Empty"
-                    }
-                  }
+                "requestTemplates": {
+                  "application/octet-stream": {"Fn::Join": ["",["{\n    \"StreamName\": \"", {"Ref": "ResourceARN"}, "\",\n    \"Data\": \"$util.base64Encode($input.body)\",\n    \"PartitionKey\": \"$input.path('", {"Ref" : "PartitionKey"},"')\"\n}"]]},
+                  "application/json": {"Fn::Join": ["",["{\n    \"StreamName\": \"", {"Ref": "ResourceARN"}, "\",\n    \"Data\": \"$util.base64Encode($input.body)\",\n    \"PartitionKey\": \"$input.path('", {"Ref" : "PartitionKey"},"')\"\n}"]]},
+                  "text/xml": {"Fn::Join": ["",["{\n    \"StreamName\": \"", {"Ref": "ResourceARN"}, "\",\n    \"Data\": \"$util.base64Encode($input.body)\",\n    \"PartitionKey\": \"$input.path('", {"Ref" : "PartitionKey"},"')\"\n}"]]},
+                  "text/plain": {"Fn::Join": ["",["{\n    \"StreamName\": \"", {"Ref": "ResourceARN"}, "\",\n    \"Data\": \"$util.base64Encode($input.body)\",\n    \"PartitionKey\": \"$input.path('", {"Ref" : "PartitionKey"},"')\"\n}"]]}
                 },
-                "x-amazon-apigateway-integration": {
-                  "credentials": {"Ref" : "RoleARN"},
-                  "responses": {
-                    "default": {
-                      "statusCode": "200"
-                    }
-                  },
-                  "requestTemplates": {
-                    "application/json": "{\n    \"ShardIterator\": \"$input.params('Shard-Iterator')\"\n}"
-                  },
-                  "uri": {"Fn::Join": [":", ["arn:aws:apigateway", {"Ref": "AWS::Region"}, "kinesis:action/GetRecords"]]},
-                  "httpMethod": "POST",
-                  "requestParameters": {
-                    "integration.request.header.Content-Type": "'application/x-amz-json-1.1'"
-                  },
-                  "type": "aws"
-                }
-              },
-              "put": {
-                "consumes": [
-                  "application/json",
-                  "application/x-amz-json-1.1"
-                ],
-                "produces": [
-                  "application/json"
-                ],
-                "parameters": [
-                  {
-                    "name": "Content-Type",
-                    "in": "header",
-                    "required": false,
-                    "type": "string"
-                  },
-                  {
-                    "name": "stream-name",
-                    "in": "path",
-                    "required": true,
-                    "type": "string"
-                  },
-                  {
-                    "in": "body",
-                    "name": "PutRecordsMethodRequestPayload",
-                    "required": true,
-                    "schema": {
-                      "$ref": "#/definitions/PutRecordsMethodRequestPayload"
-                    }
-                  }
-                ],
-                "responses": {
-                  "200": {
-                    "description": "200 response",
-                    "schema": {
-                      "$ref": "#/definitions/Empty"
-                    }
-                  }
-                },
-                "x-amazon-apigateway-integration": {
-                  "credentials": {"Ref" : "RoleARN"},
-                  "responses": {
-                    "default": {
-                      "statusCode": "200"
-                    }
-                  },
-                  "requestTemplates": {
-                    "application/json": "{\n    \"StreamName\": \"$input.params('stream-name')\",\n    \"Records\": [\n       #foreach($elem in $input.path('$.records'))\n          {\n            \"Data\": \"$util.base64Encode($elem.data)\",\n            \"PartitionKey\": \"$elem.partition-key\"\n          }#if($foreach.hasNext),#end\n        #end\n    ]\n}",
-                    "application/x-amz-json-1.1": "#set($inputRoot = $input.path('$'))\n{\n  \"StreamName\": \"$input.params('stream-name')\",\n  \"records\" : [\n    #foreach($elem in $inputRoot.records)\n    {\n        \"Data\" : \"$elem.data\",\n        \"PartitionKey\" : \"$elem.partition-key\"\n    }#if($foreach.hasNext),#end\n    #end\n  ]\n}"
-                  },
-                  "uri": {"Fn::Join": [":", ["arn:aws:apigateway", {"Ref": "AWS::Region"}, "kinesis:action/PutRecords"]]},
-                  "httpMethod": "POST",
-                  "requestParameters": {
-                    "integration.request.header.Content-Type": "'application/x-amz-json-1.1'"
-                  },
-                  "type": "aws"
-                }
-              }
-            },
-            "/streams/{stream-name}/sharditerator": {
-              "get": {
-                "consumes": [
-                  "application/json"
-                ],
-                "produces": [
-                  "application/json"
-                ],
-                "parameters": [
-                  {
-                    "name": "stream-name",
-                    "in": "path",
-                    "required": true,
-                    "type": "string"
-                  },
-                  {
-                    "name": "shard-id",
-                    "in": "query",
-                    "required": false,
-                    "type": "string"
-                  }
-                ],
-                "responses": {
-                  "200": {
-                    "description": "200 response",
-                    "schema": {
-                      "$ref": "#/definitions/Empty"
-                    }
-                  }
-                },
-                "x-amazon-apigateway-integration": {
-                  "credentials": {"Ref" : "RoleARN"},
-                  "responses": {
-                    "default": {
-                      "statusCode": "200"
-                    }
-                  },
-                  "requestTemplates": {
-                    "application/json": "{\n    \"ShardId\": \"$input.params('shard-id')\",\n    \"ShardIteratorType\": \"TRIM_HORIZON\",\n    \"StreamName\": \"$input.params('stream-name')\"\n}"
-                  },
-                  "uri": {"Fn::Join": [":", ["arn:aws:apigateway", {"Ref": "AWS::Region"}, "kinesis:action/GetShardIterator"]]},
-                  "httpMethod": "POST",
-                  "requestParameters": {
-                    "integration.request.header.Content-Type": "'application/x-amz-json-1.1'"
-                  },
-                  "type": "aws"
-                }
+                "passthroughBehavior": "when_no_match",
+                "httpMethod": "POST",
+                "type": "aws"
               }
             }
           },
           "definitions": {
-            "PutRecordsMethodRequestPayload": {
-              "type": "object",
-              "properties": {
-                "records": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "data": {
-                        "type": "string"
-                      },
-                      "partition-key": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            },
             "Empty": {
               "type": "object"
             }
